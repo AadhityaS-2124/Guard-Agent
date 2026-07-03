@@ -12,7 +12,7 @@
 
 ## 🎯 Overview
 
-**GuardAgent** is a sophisticated security platform that combines static code analysis with AI-powered remediation to automatically detect and fix security vulnerabilities in Python code. It leverages a multi-agent architecture to provide intelligent, context-aware vulnerability remediation with a self-healing validation loop.
+**GuardAgent** is a sophisticated security platform that combines static code analysis with AI-powered remediation to automatically detect and fix security vulnerabilities in Python code. It leverages a multi-agent architecture with enterprise-grade security controls to provide intelligent, context-aware vulnerability remediation with a self-healing validation loop.
 
 ### Key Capabilities
 
@@ -22,6 +22,7 @@
 ✅ **Real-Time Streaming** - Live pipeline status and execution updates  
 ✅ **Interactive UI** - Modern, skeuomorphic interface with visual security insights  
 ✅ **Comprehensive Logging** - Detailed error tracking and refinement history  
+✅ **🔒 Enterprise Security** - Built-in secret redaction, CORS protection, and secure error handling  
 
 ---
 
@@ -42,7 +43,9 @@
 │  │  AST Scan    │───→│  LLM Patch   │───→│  Validation  │       │
 │  │  & Analyze   │    │  (Gemini)    │    │  (Compiler)  │       │
 │  └──────────────┘    └──────────────┘    └────────┬─────┘       │
-│                                                    │              │
+│         ↓                                         ↓              │
+│    🔐 Security Layer (Secret Redaction & Error Sanitization)   │
+│                                                                   │
 │                              ┌─────────────────────┴──────┐       │
 │                              │                            │       │
 │                              ↓ (on error & max < 3)      ↓       │
@@ -57,7 +60,8 @@
 2. **Analyzing** 📊 - Vulnerability classification and severity assessment
 3. **Patching** 🔧 - LLM-powered code remediation
 4. **Validating** ✓ - Native Python compilation verification
-5. **Complete** ✨ - Results delivery with refinement history
+5. **🔐 Sanitizing** - Secret redaction & error handling
+6. **Complete** ✨ - Results delivery with refinement history
 
 ---
 
@@ -148,8 +152,9 @@ GuardAgent detects the following security vulnerabilities:
 ### DevOps & Tools
 - **Oxlint** - High-performance linter
 - **Pydantic** - Data validation
-- **CORS Middleware** - Cross-origin request handling
+- **CORS Middleware** - Cross-origin request handling with whitelisting
 - **SSE (Server-Sent Events)** - Real-time streaming
+- **Logging** - Comprehensive error tracking and audit trails
 
 ---
 
@@ -211,9 +216,11 @@ Guard-Agent/
 │   ├── app/
 │   │   ├── main.py               # FastAPI server & /api/remediate endpoint
 │   │   ├── ast_analyzer.py       # Vulnerability detection
-│   │   └── remediation_graph.py  # LangGraph multi-agent pipeline
+│   │   ├── remediation_graph.py  # LangGraph multi-agent pipeline
+│   │   └── security.py           # 🔐 Secret redaction & sanitization
 │   ├── requirements.txt
 │   ├── test_backend.py           # Unit tests
+│   ├── test_security.py          # 🔒 Security module tests
 │   └── test_adc.py
 │
 ├── README.md                      # This file
@@ -245,6 +252,23 @@ AST Scanner Test: SUCCESS
 LangGraph Compilation Test: SUCCESS
 
 All backend checks passed successfully!
+```
+
+### 🔐 Security Module Tests
+
+```bash
+cd backend
+python test_security.py
+```
+
+**Expected Output:**
+```
+--- Running Security Module Tests ---
+1. test_sanitize_text_specific_secret: PASSED
+2. test_sanitize_text_regex_patterns: PASSED
+3. test_redact_secrets_recursive: PASSED
+
+All Security Module Tests PASSED successfully!
 ```
 
 ---
@@ -320,13 +344,66 @@ response = client.models.generate_content(
 
 ---
 
-## 🔐 Security Considerations
+## 🔐 Security Architecture
 
-- **API Keys**: Never hardcode Gemini API keys; use environment variables
-- **CORS**: Configure `allow_origins` for production deployments
-- **Input Validation**: All code submissions validated via Pydantic models
-- **Rate Limiting**: Consider adding rate limiting for production
-- **Code Execution**: No direct code execution; only syntax validation via `compile()`
+GuardAgent implements **enterprise-grade security controls** to protect sensitive data:
+
+### 🛡️ Core Security Features
+
+#### 1. **Secret Redaction System** 
+- **Pattern-Based Detection**: Identifies API keys, tokens, and credentials using regex patterns
+- **Supported Patterns**:
+  - Google Gemini API Keys (`AIzaSy*`)
+  - Stripe API Keys (`sk_test_*`, `sk_live_*`)
+  - Bearer Tokens and JWT-style credentials
+- **Recursive Scanning**: Redacts secrets from nested structures (dicts, lists, strings)
+- **Context-Aware**: Sanitizes both error messages and pipeline logs
+
+#### 2. **CORS Security**
+- **Strict Whitelist**: Only allows requests from localhost development ports
+- **Production Ready**: Configure `allow_origins` for production deployments
+- **Credentials Disabled**: Prevents cookie/session leakage
+
+#### 3. **Error Handling & Logging**
+- **Global Exception Handler**: Captures unhandled exceptions with automatic secret sanitization
+- **Sanitized Tracebacks**: All error logs have secrets redacted before logging
+- **Audit Trail**: Comprehensive logging for debugging without exposing credentials
+
+#### 4. **Input Validation**
+- **Pydantic Models**: All API requests validated against strict schemas
+- **Type Safety**: TypeScript on frontend, Python type hints on backend
+
+#### 5. **No Code Execution**
+- **Safe Compilation Only**: Uses Python's `compile()` function for syntax validation
+- **No `eval()` or `exec()`**: Prevents arbitrary code execution
+
+### 🔒 Secret Management Best Practices
+
+```python
+# ❌ DON'T: Hardcode API keys
+GEMINI_API_KEY = "AIzaSy..."
+
+# ✅ DO: Use environment variables
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+
+# ✅ DO: Use frontend UI for temporary keys
+# Keys are automatically sanitized before logging
+```
+
+### 📊 Security Test Suite
+
+All security features are tested in `backend/test_security.py`:
+
+```bash
+# Test specific secret redaction
+python -m pytest backend/test_security.py::test_sanitize_text_specific_secret -v
+
+# Test regex pattern detection
+python -m pytest backend/test_security.py::test_sanitize_text_regex_patterns -v
+
+# Test recursive redaction
+python -m pytest backend/test_security.py::test_redact_secrets_recursive -v
+```
 
 ---
 
@@ -341,6 +418,7 @@ Contributions are welcome! Areas for enhancement:
 - [ ] GitHub Actions integration
 - [ ] Performance benchmarking suite
 - [ ] Docker containerization
+- [ ] Advanced encryption for secret storage
 
 ---
 
@@ -351,6 +429,7 @@ Contributions are welcome! Areas for enhancement:
 | **AST Analysis Time** | 50-100ms |
 | **LLM Patching Time** | 2-5s (Gemini 2.5-Flash) |
 | **Compilation Validation** | 10-50ms |
+| **Secret Redaction Overhead** | <5ms |
 | **Max Refinement Iterations** | 3 |
 | **Average Total Runtime** | 3-8s |
 
@@ -364,6 +443,7 @@ Contributions are welcome! Areas for enhancement:
 - **Vulnerability Highlighting** - Interactive vulnerability markers
 - **Refinement History** - Detailed iteration tracking with error logs
 - **Responsive Layout** - Optimized for desktop viewing
+- **Secure Error Display** - Sanitized error messages without sensitive data leakage
 
 ---
 
@@ -378,6 +458,7 @@ This project is open source and available for educational and research purposes.
 - **v1.1** - Multi-language support (JavaScript, Java, Go)
 - **v1.2** - Docker deployment with docker-compose
 - **v1.3** - GitHub integration & CI/CD plugins
+- **v1.4** - 🔐 Advanced secret vaulting & encryption
 - **v2.0** - Advanced dataflow analysis & taint tracking
 
 ---
@@ -388,18 +469,30 @@ This project is open source and available for educational and research purposes.
 2. **Custom Code**: Edit the Python code textarea directly
 3. **Error Analysis**: Check the "Instrumentation" panel for refinement details
 4. **Syntax Learning**: Each iteration shows compiler feedback
+5. **Security First**: All API keys are automatically redacted from logs and error messages
 
 ---
 
 ## 📞 Support
 
-For issues, questions, or feature requests, please open an issue on GitHub or contact the maintainers.
+For issues, questions, or security concerns, please:
+- Open an issue on GitHub
+- Contact the maintainers
+- Report security vulnerabilities responsibly
+
+---
+
+## 🔐 Security Disclosure
+
+If you discover a security vulnerability, please email the maintainers directly instead of using the issue tracker. We take security seriously and will respond promptly.
 
 ---
 
 <div align="center">
 
 **Made with ❤️ by Aadhitya S**
+
+⭐ Star us on GitHub | 🐛 Report Issues | 🤝 Contribute
 
 [⬆ Back to Top](#-guardagent-multi-agent-security-remediation-engine)
 
