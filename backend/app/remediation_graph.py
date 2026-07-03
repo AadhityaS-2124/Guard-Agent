@@ -200,8 +200,17 @@ def scan_network_hosts(host_ip: str):
             "pipeline_step": "patching"
         }
     except Exception as e:
+        from app.security import sanitize_text
+        secrets_to_redact = []
+        if state.get("api_key"):
+            secrets_to_redact.append(state["api_key"])
+        env_key = os.environ.get("GEMINI_API_KEY")
+        if env_key:
+            secrets_to_redact.append(env_key)
+            
+        sanitized_err = sanitize_text(f"Gemini API Error: {str(e)}", secrets_to_redact)
         return {
-            "error_message": f"Gemini API Error: {str(e)}",
+            "error_message": sanitized_err,
             "pipeline_step": "complete"
         }
 

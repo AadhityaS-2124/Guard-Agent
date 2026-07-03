@@ -9,7 +9,10 @@ import {
   Cpu, 
   CheckCircle,
   FileCode,
-  Info
+  Info,
+  Eye,
+  EyeOff,
+  Trash2
 } from "lucide-react";
 import { Stepper } from "./components/Stepper";
 import { CodeViewer } from "./components/CodeViewer";
@@ -66,7 +69,18 @@ def scan_network_hosts(host_ip: str):
 export default function App() {
   const [selectedTemplate, setSelectedTemplate] = useState<string>("sql_injection");
   const [inputCode, setInputCode] = useState<string>(CODE_TEMPLATES.sql_injection);
-  const [apiKey, setApiKey] = useState<string>("");
+  const [apiKey, setApiKey] = useState<string>(() => sessionStorage.getItem("gemini_api_key") || "");
+  const [showApiKey, setShowApiKey] = useState<boolean>(false);
+
+  const handleApiKeyChange = (val: string) => {
+    setApiKey(val);
+    sessionStorage.setItem("gemini_api_key", val);
+  };
+
+  const clearApiKey = () => {
+    setApiKey("");
+    sessionStorage.removeItem("gemini_api_key");
+  };
 
   // Pipeline execution state
   const [isRunning, setIsRunning] = useState<boolean>(false);
@@ -259,16 +273,43 @@ export default function App() {
                   </label>
                   <span className="text-[9px] text-gray-500 font-light">Overrides env</span>
                 </div>
-                <div className="skeuo-well p-1.5">
+                <div className="skeuo-well p-1 flex items-center gap-1.5 pr-2">
                   <input
-                    type="password"
+                    type={showApiKey ? "text" : "password"}
                     disabled={isRunning}
                     placeholder="Enter API key..."
                     value={apiKey}
-                    onChange={(e) => setApiKey(e.target.value)}
-                    className="w-full bg-transparent border-0 rounded-lg px-2 py-1 text-xs font-mono text-gray-300 placeholder-gray-600 focus:outline-none focus:ring-0"
+                    onChange={(e) => handleApiKeyChange(e.target.value)}
+                    className="flex-1 bg-transparent border-0 rounded-lg px-2 py-1 text-xs font-mono text-gray-300 placeholder-gray-600 focus:outline-none focus:ring-0"
                   />
+                  {apiKey && (
+                    <button
+                      type="button"
+                      onClick={clearApiKey}
+                      disabled={isRunning}
+                      title="Clear API Key"
+                      className="text-gray-500 hover:text-red-400 transition-colors p-1 cursor-pointer flex items-center justify-center"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setShowApiKey(!showApiKey)}
+                    disabled={isRunning}
+                    title={showApiKey ? "Hide Key" : "Show Key"}
+                    className="text-gray-500 hover:text-indigo-400 transition-colors p-1 cursor-pointer flex items-center justify-center"
+                  >
+                    {showApiKey ? (
+                      <EyeOff className="w-3.5 h-3.5" />
+                    ) : (
+                      <Eye className="w-3.5 h-3.5" />
+                    )}
+                  </button>
                 </div>
+                <p className="text-[9px] text-gray-500 leading-tight">
+                  This key is stored locally in temporary session memory and is never shared with third parties.
+                </p>
               </div>
 
               {/* Raw code text area */}
