@@ -399,7 +399,7 @@ For issues, questions, or feature requests, please open an issue on GitHub or co
 
 <div align="center">
 
-**Made with ❤️ by GuardAgent Team**
+**Made with ❤️ by Aadhitya S**
 
 [⬆ Back to Top](#-guardagent-multi-agent-security-remediation-engine)
 
